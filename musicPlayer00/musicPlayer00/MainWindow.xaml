@@ -1,0 +1,33 @@
+﻿<Window x:Class="musicPlayer00.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:musicPlayer00"
+        mc:Ignorable="d"
+        Title="Music Player ver 00" Height="450" Width="800" Topmost="True" Cursor="Arrow" WindowStartupLocation="CenterScreen">
+    <Grid>
+        <DockPanel>
+            <Menu DockPanel.Dock="Top" VerticalAlignment="Top" Margin="-6,0,0,0">
+                <MenuItem Header="_File">
+                    <!--<MenuItem Header="_New" />-->
+                    <MenuItem Header="_Open" />
+                    <MenuItem Header="_Save" />
+                    <Separator />
+                    <MenuItem Header="_Exit" />
+                </MenuItem>
+            </Menu>
+        </DockPanel>
+        <TreeView x:Name="folderDisplay" Width="109" HorizontalAlignment="Left" Margin="0,20,0,62">
+            <TreeViewItem Header="Folder"/>
+            <TreeViewItem Header="Extra"/>
+        </TreeView>
+        <ListView Height="337" VerticalAlignment="Top" Width="650" SnapsToDevicePixels="True" ClipToBounds="True" Margin="114,20,28,0">
+            <ListBoxItem>ListBox Item #1</ListBoxItem>
+            <ListBoxItem>ListBox Item #2</ListBoxItem>
+            <ListBoxItem>ListBox Item #3</ListBoxItem>
+        </ListView>
+        <Button Margin="373,362,368,10" HorizontalAlignment="Center" Width="51" VerticalAlignment="Center" Height="47">Play</Button>
+    </Grid>
+</Window>
+    
