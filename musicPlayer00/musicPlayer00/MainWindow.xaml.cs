@@ -21,13 +21,32 @@ namespace musicPlayer00
         Dictionary<string,string> namePath = new Dictionary<string, string>(); //Key: name of folder | Value: path of folder
         Dictionary<string, string> songPath = new Dictionary<string, string>(); //Key is combination of song name and folder name | Value : song path
         WMPLib.WindowsMediaPlayer player = new WMPLib.WindowsMediaPlayer();
-        String selectedHeader;
-        bool playing = false;
+        String selectedHeader = null; //holds selected folder
+        String currentlyPlaying; //holds currently playing song
+        bool playing = false; //if song is playing
+        bool paused = false; //if song is paused
         public MainWindow()
         {
             InitializeComponent();
+            string path = Directory.GetCurrentDirectory();
+            player.PlayStateChange += new WMPLib._WMPOCXEvents_PlayStateChangeEventHandler(Player_ChangedState); //windows media state change function
+            path += @"\Saved_Data.txt";
+            if (File.Exists(path)) //check for folders from previous sessions and add them to treeview
+            {
+                string[] text = File.ReadAllLines(path, Encoding.UTF8);
+                foreach(string line in text)
+                {
+                    try
+                    {
+                        Add_Folder_View(line); //add folders form the text file to treeview
+                    }
+                    catch(NullReferenceException) //folder no longer exists or is in a different path
+                    {
+                        return;
+                    }
+                }
+            }
         }
-
         public void OpenFolder() //refactor as needed
         {
         }
@@ -37,48 +56,82 @@ namespace musicPlayer00
 
         }
 
-        private void ListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        //changes button based on what is selected
+        private void SongView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-
+            string name;
+            string key;
+            if (SongView.SelectedItem != null && selectedHeader != null) //if selected and song is playing
+            {
+                name = SongView.SelectedItem.ToString();
+                key = name + selectedHeader;
+            }
+            else
+            {
+                if (currentlyPlaying != null) //if nothing is selected but song is playing, change to pause
+                    PlayButton.Content = "Pause";
+                return;
+            }
+            if(currentlyPlaying != null && !songPath[key].Equals(currentlyPlaying)) //new song selected to play
+            {
+                PlayButton.Content = "Play";
+            }
+            else if(currentlyPlaying != null && songPath[key].Equals(currentlyPlaying)) //moved back to current song to pause
+            {
+                PlayButton.Content = "Pause";
+            }
         }
 
         private void Play_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (!playing) //plays song
+                String name = SongView.SelectedItem.ToString();
+                String key = name + selectedHeader;
+                if ((!playing && !paused) || (SongView.SelectedItem != null && !songPath[key].Equals(currentlyPlaying))) //play new song
                 {
-                    String name = SongView.SelectedItem.ToString();
-                    String key = name+selectedHeader;
                     String song = songPath[key];
+                    currentlyPlaying = song; //set currently playing song to song path
                     player.URL = song;
                     player.controls.play();
-                    playing = true;
-                    PlayButton.Content = "Pause";
-                }
-                else //pause doesn't work properly currently
+                } else if (!playing && paused) //continue playing
                 {
-                    player.controls.stop();
-                    playing = false;
-                    PlayButton.Content = "Play";
+                    player.controls.play();
+                }
+                else
+                {
+                    player.controls.pause();
                 }
             }
             catch (NullReferenceException) //no song selected
             {
+                if (currentlyPlaying != null && playing) //if song is currently playing it will pause
+                    player.controls.pause();
+                else if (currentlyPlaying != null && !playing) //if song currently paused it will play
+                    player.controls.play();
                 return;
             }
         }
 
-        private void Pause_Click(object sender, RoutedEventArgs e)
+        void Player_ChangedState(int state) //Actions when media player changes state
         {
-            try
+            if(state == (int)WMPLib.WMPPlayState.wmppsMediaEnded) //when media player ends song
             {
-                player.controls.pause();
-            }
-            catch (Exception)
+                paused = false;
+                playing = false;
+                currentlyPlaying = null;
+                PlayButton.Content = "Play";
+            }else if(state == (int)WMPLib.WMPPlayState.wmppsPaused) //when media player is paused
             {
-                Console.Write("not currently playing a song");
+                paused = true;
+                playing = false;
+                PlayButton.Content = "Play";
+            } else if(state == (int)WMPLib.WMPPlayState.wmppsPlaying) //when media player is playing
+            {
+                playing = true;
+                PlayButton.Content = "Pause";
             }
+            
         }
 
         //add folder to TreeView
@@ -114,6 +167,7 @@ namespace musicPlayer00
         private void Remove_Folder_View(String fn)
         {
             folderDisplay.Items.Remove(fn); //remove folder from view
+            namePath.Remove(selectedHeader); //remove deleted file from dictionary
         }
 
         private void TreeViewClick()
@@ -138,15 +192,19 @@ namespace musicPlayer00
                 {
                     string tmp = getFileName(song).Replace(".mp3","").Replace(".wav",""); //convert path to file name and remove .mp3 from end
                     string key = tmp+selectedHeader; //key value pair for dictionary (folder & song path)
-                    if (songPath.ContainsKey(key))
+                    if (songPath.ContainsKey(key) && songPath[key].Equals(song))
+                    {
+                        SongView.Items.Add(tmp);
+                        continue;
+                    }
+                    else if (songPath.ContainsKey(key) && !songPath[key].Equals(song))
                         songPath.Remove(key);
-                    songPath.Add(key, song);
+                    songPath.Add(key, song); //key = name of song, value (song) = path of song
                     SongView.Items.Add(tmp); //add each song to songview
                 }
             }
             catch (DirectoryNotFoundException) //if directory deleted remove folder from treeview
             {
-                namePath.Remove(selectedHeader); //remove deleted file from dictionary
                 Remove_Folder_View(selectedHeader); //remove file from view
                 return;
             }
@@ -156,6 +214,13 @@ namespace musicPlayer00
             }
         }
 
+        //Saves current folders
+        private void On_Close(object sender, EventArgs e)
+        {
+            using (StreamWriter file = new StreamWriter("Saved_Data.txt"))
+                foreach (var folder in namePath)
+                    file.WriteLine("{0}", folder.Value);
+        }
 
         /*
          *PERIPHERY METHODS 

@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:musicPlayer00"
         mc:Ignorable="d"
-        Title="Music Player ver 00" Height="450" Width="800" Topmost="True" Cursor="Arrow" WindowStartupLocation="CenterScreen">
+        Title="Music Player ver 00" Height="450" Width="800" Topmost="True" Cursor="Arrow" WindowStartupLocation="CenterScreen"
+        Closing="On_Close">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="103*"/>
@@ -22,13 +23,8 @@
                 </MenuItem>
             </Menu>
         </DockPanel>
-        <TreeView x:Name="folderDisplay" Width="109" HorizontalAlignment="Left" Margin="0,20,0,62" Grid.ColumnSpan="2" MouseUp="Selected_Folder">
-            <TreeViewItem Header="Folder"/>
-            <TreeViewItem Header="Extra"/>
-        </TreeView>
-        <ListView x:Name="SongView" Height="306" VerticalAlignment="Top" Width="650" SnapsToDevicePixels="True" ClipToBounds="True" Margin="11,20,28,0" Grid.Column="1" MouseDoubleClick="Play_Click">
-            <ListBoxItem Selected="ListBoxItem_Selected">ListBox Item #1</ListBoxItem>
-        </ListView>
+        <TreeView x:Name="folderDisplay" Width="109" HorizontalAlignment="Left" Margin="0,20,0,62" Grid.ColumnSpan="2" MouseUp="Selected_Folder"/>
+        <ListView x:Name="SongView" Height="306" VerticalAlignment="Top" Width="650" SnapsToDevicePixels="True" ClipToBounds="True" Margin="11,20,28,0" Grid.Column="1" MouseDoubleClick="Play_Click" SelectionChanged="SongView_SelectionChanged"/>
         <Button Margin="310,362,328,10" HorizontalAlignment="Center" Width="51" VerticalAlignment="Center" Height="47" Click="Play_Click" Grid.Column="1" Name="PlayButton">Play</Button>
         <Button Content="Add Folder" Height="47" Margin="0,362,10,0" VerticalAlignment="Top" Click="Add_Folder" HorizontalAlignment="Right" Width="83"/>
         <Slider HorizontalAlignment="Left" Margin="11,331,0,0" VerticalAlignment="Top" Height="26" Width="650" Grid.Column="1"/>
