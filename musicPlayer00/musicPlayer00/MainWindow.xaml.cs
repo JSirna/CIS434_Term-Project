@@ -214,6 +214,30 @@ namespace musicPlayer00
             }
         }
 
+        /*
+         Add song to playlist it will take mp3 files dragged into the listview and then add them
+         currently if there is another song with the same name it won't overwrite it
+         (can take multiple files dragged in at once)
+         */
+        private void Add_To_Playlist(object sender, System.Windows.DragEventArgs e)
+        {
+            string[] files = (string[])e.Data.GetData(System.Windows.Forms.DataFormats.FileDrop, false); //get dragged files
+            var songs = files.Where(s => s.EndsWith(".mp3") || s.EndsWith(".wav")); //select only music files
+            string currentPath = namePath[selectedHeader]; //gets current path
+            foreach (string song in songs)
+            {
+               try
+                {
+                File.Copy(song, currentPath + @"\" + getFileName(song), false);
+                }
+               catch (System.IO.IOException)
+               {
+                return;
+               }
+                Selected_Folder(folderDisplay.SelectedItem, e); //refresh view
+            }
+        }
+
         //Saves current folders
         private void On_Close(object sender, EventArgs e)
         {
@@ -223,7 +247,7 @@ namespace musicPlayer00
         }
 
         /*
-         *PERIPHERY METHODS 
+         *Peripheral METHODS 
          */
          //reverse string
         private String reverse(String str)
