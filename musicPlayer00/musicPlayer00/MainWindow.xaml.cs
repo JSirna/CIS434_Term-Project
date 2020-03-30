@@ -272,5 +272,30 @@ namespace musicPlayer00
             }
             return reverse(tmp);
         }
+
+        private void seek()//seeking functionality
+        {
+            //get song length
+            TagLib.File l = TagLib.File.Create(SongView.SelectedItem.ToString());//create taglib file
+            int songlength = (int)l.Properties.Duration.TotalSeconds;//get the song length in seconds
+
+
+        }
+
+        private void Play_Prev(object sender, RoutedEventArgs e)//play the previous song in the current playlist
+        {
+            SongView.SelectedItem = SongView.Items[SongView.SelectedIndex - 1];//adjust offset
+            Play_Click(sender, e);
+        }
+
+        private void Play_Next(object sender, RoutedEventArgs e)//play the next song in the current playlist
+        {
+            SongView.SelectedItem = SongView.Items[SongView.SelectedIndex + 1];//adjust offset
+            //if(//not last in playlist)
+            //{
+            Play_Click(sender, e);
+            //}
+
+        }
     }
 }

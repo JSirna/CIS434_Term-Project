@@ -26,6 +26,8 @@
         <TreeView x:Name="folderDisplay" Width="109" HorizontalAlignment="Left" Margin="0,20,0,62" Grid.ColumnSpan="2" MouseUp="Selected_Folder"/>
         <ListView x:Name="SongView" Height="306" VerticalAlignment="Top" Width="650" SnapsToDevicePixels="True" ClipToBounds="True" Margin="11,20,28,0" Grid.Column="1" MouseDoubleClick="Play_Click" AllowDrop="True" DragDrop.Drop="Add_To_Playlist"  SelectionChanged="SongView_SelectionChanged"/>
         <Button Margin="310,362,328,10" HorizontalAlignment="Center" Width="51" VerticalAlignment="Center" Height="47" Click="Play_Click" Grid.Column="1" Name="PlayButton">Play</Button>
+        <Button Margin="0,362,258,10" HorizontalAlignment="Right" Width="51" VerticalAlignment="Center" Height="47" Click="Play_Next" Grid.Column="1" Name="NextButton">Next</Button>
+        <Button Margin="242,362,0,10" HorizontalAlignment="Left" Width="51" VerticalAlignment="Center" Height="47" Click="Play_Prev" Grid.Column="1" Name="PrevButton" RenderTransformOrigin="0.882,0.489">Prev</Button>
         <Button Content="Add Folder" Height="47" Margin="0,362,10,0" VerticalAlignment="Top" Click="Add_Folder" HorizontalAlignment="Right" Width="83"/>
         <Slider HorizontalAlignment="Left" Margin="11,331,0,0" VerticalAlignment="Top" Height="26" Width="650" Grid.Column="1"/>
     </Grid>
