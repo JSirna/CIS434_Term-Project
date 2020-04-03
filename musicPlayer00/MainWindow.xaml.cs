@@ -10,6 +10,8 @@ using System.Windows.Forms;
 using System.Windows.Controls;
 using System.ComponentModel;
 using System.Windows.Markup;
+using System.Timers;
+using MessageBox = System.Windows.Forms.MessageBox;
 
 namespace musicPlayer00
 {
@@ -25,8 +27,13 @@ namespace musicPlayer00
         String currentlyPlaying; //holds currently playing song
         bool playing = false; //if song is playing
         bool paused = false; //if song is paused
+        
+
+
+
         public MainWindow()
         {
+            DataContext = this;
             InitializeComponent();
             string path = Directory.GetCurrentDirectory();
             player.PlayStateChange += new WMPLib._WMPOCXEvents_PlayStateChangeEventHandler(Player_ChangedState); //windows media state change function
@@ -46,6 +53,7 @@ namespace musicPlayer00
                     }
                 }
             }
+            
         }
         public void OpenFolder() //refactor as needed
         {
@@ -86,8 +94,10 @@ namespace musicPlayer00
         {
             try
             {
+                
                 String name = SongView.SelectedItem.ToString();
                 String key = name + selectedHeader;
+                
                 if ((!playing && !paused) || (SongView.SelectedItem != null && !songPath[key].Equals(currentlyPlaying))) //play new song
                 {
                     String song = songPath[key];
@@ -102,6 +112,7 @@ namespace musicPlayer00
                 {
                     player.controls.pause();
                 }
+                seek();
             }
             catch (NullReferenceException) //no song selected
             {
@@ -135,13 +146,37 @@ namespace musicPlayer00
         }
 
         //add folder to TreeView
+        /*
+         * I changed it so that it goes straight to the Music Diectery
+         * and adds the folders inside..
+         * It doesnot add the folders nested inside other folders.
+         * I commented the old version incase you have it somewhere else.
+         */
         private void Add_Folder(object sender, RoutedEventArgs e)
         {
-            FolderBrowserDialog fbd  = new FolderBrowserDialog(); //to view folders
-            if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK) 
+            
+            string[] dir = Directory.GetDirectories(@"c:\Users");  //Enters the C drive and goues staight to the User directory
+            foreach (string Users in dir)   // gets the path of each item (file, Folder, directory) in the Users Directory
             {
-                Add_Folder_View(fbd.SelectedPath); //add selected folder
+                try
+                {
+                    string[] MusicDir = Directory.GetDirectories(Users + @"\Music");
+                    foreach (string folders in MusicDir)    // Same thing for music directory
+                    {
+                            Add_Folder_View(folders); //add selected folder
+                    }
+                }
+                catch (UnauthorizedAccessException) { } //if you eneter a directory your not allowed to.
+                catch { } // All Other exceptions
+
             }
+
+                    //The olde version in case you like selecting yours manually
+            /*FolderBrowserDialog fbd  = new FolderBrowserDialog(); //to view folders
+             if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK) 
+             {
+                 Add_Folder_View(fbd.SelectedPath); //add selected folder
+             }*/
         }
 
         private void ListBoxItem_Selected(object sender, RoutedEventArgs e)
@@ -164,6 +199,13 @@ namespace musicPlayer00
             folderDisplay.Items.Add(tmpTVI);
         }
 
+        // Delete selected folder from tree view
+        private void Delete(object sender, RoutedEventArgs e)   //delete folder
+        {
+            folderDisplay.Items.Remove(folderDisplay.SelectedItem); // Removes selected folder from TreeView
+            namePath.Remove(selectedHeader);
+        }
+        // Delete folders that no longer exist when app starts up
         private void Remove_Folder_View(String fn)
         {
             folderDisplay.Items.Remove(fn); //remove folder from view
@@ -273,29 +315,78 @@ namespace musicPlayer00
             return reverse(tmp);
         }
 
+        /*
+         * Currently doesnt seek but I set it up so that every time you click the play button
+         * it will get the song length and print it in the output.
+         */
         private void seek()//seeking functionality
         {
-            //get song length
-            TagLib.File l = TagLib.File.Create(SongView.SelectedItem.ToString());//create taglib file
-            int songlength = (int)l.Properties.Duration.TotalSeconds;//get the song length in seconds
+            int SongLength = 0;
+            String key = SongView.SelectedItem.ToString() + selectedHeader;
+            string currentDirName = @"" + songPath[key];
+                     
+            System.IO.FileInfo fi = null;   // Completely Different from String
+            try
+            {
+                fi = new System.IO.FileInfo(songPath[key].ToString());
+            }
+            catch
+            { Console.WriteLine("Failed to get song Legnth"); }
 
+            //Console.WriteLine("{0} : {1}", fi.Length, fi.Directory);  //length and name of file
 
+            TagLib.File l = TagLib.File.Create(fi.ToString());//create taglib file
+            SongLength = (int)l.Properties.Duration.TotalSeconds;//get the song length in seconds
+            Console.WriteLine(SongLength);
         }
 
         private void Play_Prev(object sender, RoutedEventArgs e)//play the previous song in the current playlist
         {
-            SongView.SelectedItem = SongView.Items[SongView.SelectedIndex - 1];//adjust offset
-            Play_Click(sender, e);
+            if (SongView.SelectedItem == null)
+            {
+                return;
+            }
+            if (SongView.SelectedItem != SongView.Items[0]) // Current song is not the first in the ItemList
+            {
+                SongView.SelectedItem = SongView.Items[SongView.SelectedIndex - 1]; // goes to the previous song in ItemList
+                Play_Click(sender, e);
+            }
+            else
+            {
+                SongView.SelectedItem = SongView.Items[SongView.Items.Count - 1];   // Goes to last song in ItemList
+                Play_Click(sender, e);
+            }
+            
         }
 
         private void Play_Next(object sender, RoutedEventArgs e)//play the next song in the current playlist
         {
-            SongView.SelectedItem = SongView.Items[SongView.SelectedIndex + 1];//adjust offset
-            //if(//not last in playlist)
-            //{
-            Play_Click(sender, e);
-            //}
+            if(SongView.SelectedItem == null)
+            {
+                return;
+            }
+            if (SongView.SelectedItem != SongView.Items[SongView.Items.Count - 1])  // current song is not the last song in the ItemList
+            {
+                SongView.SelectedItem = SongView.Items[SongView.SelectedIndex + 1]; // Goes to next song in ItemList
+                Play_Click(sender, e);
+            }
+            else
+            {
+                SongView.SelectedItem = SongView.Items[0];  //Goes to the beginning of the ItemList
+                Play_Click(sender, e);
+            }
+
+        }      
+
+        private void Slider_Value_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            TxtSliderValue.Text = Slider.Value.ToString();
 
         }
+
+        
+
+       
     }
+
 }
