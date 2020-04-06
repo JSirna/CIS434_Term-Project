@@ -10,6 +10,8 @@ using System.Windows.Forms;
 using System.Windows.Controls;
 using System.ComponentModel;
 using System.Windows.Markup;
+using System.Timers;
+using MessageBox = System.Windows.Forms.MessageBox;
 
 namespace musicPlayer00
 {
@@ -25,15 +27,19 @@ namespace musicPlayer00
         String currentlyPlaying; //holds currently playing song
         bool playing = false; //if song is playing
         bool paused = false; //if song is paused
-        double CurrentTime = 10;
-        
-        
-        
+        // State it goes through playlest
+        bool repeat = false;
+        bool cycle = true;
+
+
+
         public MainWindow()
         {
+            DataContext = this;
             InitializeComponent();
             string path = Directory.GetCurrentDirectory();
             player.PlayStateChange += new WMPLib._WMPOCXEvents_PlayStateChangeEventHandler(Player_ChangedState); //windows media state change function
+            //player.PlayStateChange += new WMPLib._WMPOCXEvents_PlayStateChangeEventHandler(Playthorugh_ChangedState);
             path += @"\Saved_Data.txt";
             if (File.Exists(path)) //check for folders from previous sessions and add them to treeview
             {
@@ -91,31 +97,51 @@ namespace musicPlayer00
         {
             try
             {
+
                 String name = SongView.SelectedItem.ToString();
                 String key = name + selectedHeader;
+                Slider.Maximum = Song_Duration() + 1; // Sets song length to slider max value
+                TxtSliderMaxValue.Text = Song_Duration().ToString(); // shows song length at right of slider
                 if ((!playing && !paused) || (SongView.SelectedItem != null && !songPath[key].Equals(currentlyPlaying))) //play new song
                 {
+                    Console.WriteLine("New Song");
                     String song = songPath[key];
                     currentlyPlaying = song; //set currently playing song to song path
                     player.URL = song;
+                    Play_Seek();
                     player.controls.play();
-                } else if (!playing && paused) //continue playing
+                }
+                else if (!playing && paused) //continue playing
                 {
+                    Console.WriteLine("Continue playing");
                     player.controls.play();
+                    Play_Seek();
                 }
                 else
                 {
+                    Console.WriteLine("Paused");
+                    Play_Seek();
                     player.controls.pause();
                 }
+
+
             }
             catch (NullReferenceException) //no song selected
             {
+                Console.WriteLine("No Song Selected");
                 if (currentlyPlaying != null && playing) //if song is currently playing it will pause
                     player.controls.pause();
                 else if (currentlyPlaying != null && !playing) //if song currently paused it will play
                     player.controls.play();
                 return;
             }
+        }
+
+        // write in console what second you are in the song only works when playing
+        private void Play_Seek()
+        {
+             Console.WriteLine("time {0} sec", (int)player.controls.currentPosition);
+            
         }
 
         void Player_ChangedState(int state) //Actions when media player changes state
@@ -125,8 +151,11 @@ namespace musicPlayer00
                 paused = false;
                 playing = false;
                 currentlyPlaying = null;
+                player.controls.currentPosition = 0;
                 PlayButton.Content = "Play";
-            }else if(state == (int)WMPLib.WMPPlayState.wmppsPaused) //when media player is paused
+                Play_Click(new object(), new RoutedEventArgs());
+            }
+            else if(state == (int)WMPLib.WMPPlayState.wmppsPaused) //when media player is paused
             {
                 paused = true;
                 playing = false;
@@ -140,13 +169,37 @@ namespace musicPlayer00
         }
 
         //add folder to TreeView
+        /*
+         * I changed it so that it goes straight to the Music Diectery
+         * and adds the folders inside..
+         * It doesnot add the folders nested inside other folders.
+         * I commented the old version incase you have it somewhere else.
+         */
         private void Add_Folder(object sender, RoutedEventArgs e)
         {
-            FolderBrowserDialog fbd  = new FolderBrowserDialog(); //to view folders
-            if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK) 
+            
+            string[] dir = Directory.GetDirectories(@"c:\Users");  //Enters the C drive and goues staight to the User directory
+            foreach (string Users in dir)   // gets the path of each item (file, Folder, directory) in the Users Directory
             {
-                Add_Folder_View(fbd.SelectedPath); //add selected folder
+                try
+                {
+                    string[] MusicDir = Directory.GetDirectories(Users + @"\Music");
+                    foreach (string folders in MusicDir)    // Same thing for music directory
+                    {
+                            Add_Folder_View(folders); //add selected folder
+                    }
+                }
+                catch (UnauthorizedAccessException) { } //if you eneter a directory your not allowed to.
+                catch { } // All Other exceptions
+
             }
+
+                    //The olde version in case you like selecting yours manually
+            /*FolderBrowserDialog fbd  = new FolderBrowserDialog(); //to view folders
+             if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK) 
+             {
+                 Add_Folder_View(fbd.SelectedPath); //add selected folder
+             }*/
         }
 
         private void ListBoxItem_Selected(object sender, RoutedEventArgs e)
@@ -169,6 +222,13 @@ namespace musicPlayer00
             folderDisplay.Items.Add(tmpTVI);
         }
 
+        // Delete selected folder from tree view
+        private void Delete(object sender, RoutedEventArgs e)   //delete folder
+        {
+            folderDisplay.Items.Remove(folderDisplay.SelectedItem); // Removes selected folder from TreeView
+            namePath.Remove(selectedHeader);
+        }
+        // Delete folders that no longer exist when app starts up
         private void Remove_Folder_View(String fn)
         {
             folderDisplay.Items.Remove(fn); //remove folder from view
@@ -254,6 +314,7 @@ namespace musicPlayer00
         /*
          *Peripheral METHODS 
          */
+
          //reverse string
         private String reverse(String str)
         {
@@ -278,33 +339,46 @@ namespace musicPlayer00
             return reverse(tmp);
         }
 
-        private double Slider_Control(Object sender, EventArgs e)
+        /*
+         * Currently doesnt seek but I set it up so that every time you click the play button
+         * it will get the song length and print it in the output.
+         */
+        private int Song_Duration()
         {
-            return CurrentTime;
+            int SongLength = 0;
+            String key = SongView.SelectedItem.ToString() + selectedHeader;
+            string currentDirName = @"" + songPath[key];
+                     
+            System.IO.FileInfo fi = null;   // Completely Different from String
+            try
+            {
+                fi = new System.IO.FileInfo(songPath[key].ToString());
+            }
+            catch
+            { Console.WriteLine("Failed to get song Legnth"); }
+
+            //Console.WriteLine("{0} : {1}", fi.Length, fi.Directory);  //length and name of file
+
+            TagLib.File l = TagLib.File.Create(fi.ToString());//create taglib file
+            SongLength = (int)l.Properties.Duration.TotalSeconds;//get the song length in seconds
+            //Console.WriteLine("double {0}", l.Properties.Duration.TotalSeconds);
+            return SongLength;
         }
-
-        private void seek()//seeking functionality
-        {
-            //get song length
-            TagLib.File l = TagLib.File.Create(SongView.SelectedItem.ToString());//create taglib file
-            int SongLength = (int)l.Properties.Duration.TotalSeconds;//get the song length in seconds
-            string time = CurrentTime.ToString();
-
-        }
-
-
+        
         private void Play_Prev(object sender, RoutedEventArgs e)//play the previous song in the current playlist
         {
-            
-            if (SongView.SelectedIndex != 0 )
+            if (SongView.SelectedItem == null)
             {
-                SongView.SelectedItem = SongView.Items[SongView.SelectedIndex - 1];
+                return;
+            }
+            if (SongView.SelectedItem != SongView.Items[0]) // Current song is not the first in the ItemList
+            {
+                SongView.SelectedItem = SongView.Items[SongView.SelectedIndex - 1]; // goes to the previous song in ItemList
                 Play_Click(sender, e);
             }
-            //SongView.SelectedItem = SongView.Items[SongView.SelectedIndex - 1];//adjust offset
             else
             {
-                SongView.SelectedItem = SongView.Items[SongView.Items.Count - 1];
+                SongView.SelectedItem = SongView.Items[SongView.Items.Count - 1];   // Goes to last song in ItemList
                 Play_Click(sender, e);
             }
             
@@ -312,26 +386,29 @@ namespace musicPlayer00
 
         private void Play_Next(object sender, RoutedEventArgs e)//play the next song in the current playlist
         {
-            //adjust offset
-            //if(//not last in playlist)
-            //{
-            
-            //}
-            if (SongView.SelectedItem != SongView.Items[SongView.Items.Count - 1])
+            if(SongView.SelectedItem == null)
             {
-                SongView.SelectedItem = SongView.Items[SongView.SelectedIndex + 1];
+                return;
+            }
+            if (SongView.SelectedItem != SongView.Items[SongView.Items.Count - 1])  // current song is not the last song in the ItemList
+            {
+                SongView.SelectedItem = SongView.Items[SongView.SelectedIndex + 1]; // Goes to next song in ItemList
                 Play_Click(sender, e);
             }
-            //SongView.SelectedItem = SongView.Items[SongView.SelectedIndex - 1];//adjust offset
             else
             {
-                SongView.SelectedItem = SongView.Items[0];
+                SongView.SelectedItem = SongView.Items[0];  //Goes to the beginning of the ItemList
                 Play_Click(sender, e);
             }
 
         }
+
+        // Half seek, it doesn't move the slider every second but if you move the slider it will go to that second of the song.
+        private void Slider_Value_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            TxtSliderValue.Text = Slider.Value.ToString();
+            player.controls.currentPosition = Slider.Value;
+        }
+
     }
-
-    
-
 }
