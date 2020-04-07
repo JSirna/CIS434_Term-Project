@@ -22,6 +22,8 @@ namespace musicPlayer00
     {
         Dictionary<string,string> namePath = new Dictionary<string, string>(); //Key: name of folder | Value: path of folder
         Dictionary<string, string> songPath = new Dictionary<string, string>(); //Key is combination of song name and folder name | Value : song path
+        PlaylistHolder plHolder = new PlaylistHolder();
+
         WMPLib.WindowsMediaPlayer player = new WMPLib.WindowsMediaPlayer();
         String selectedHeader = null; //holds selected folder
         String currentlyPlaying; //holds currently playing song
@@ -56,14 +58,25 @@ namespace musicPlayer00
                     }
                 }
             }
-            
-        }
-        public void OpenFolder() //refactor as needed
-        {
-        }
 
-        public void LoadMusic() //refactor as needed
-        {
+            //Moved code to get songs from music directory here so it does it on start
+
+            string[] dir = Directory.GetDirectories(@"c:\Users");  //Enters the C drive and goues staight to the User directory
+            foreach (string Users in dir)   // gets the path of each item (file, Folder, directory) in the Users Directory
+            {
+                try
+                {
+                    string[] MusicDir = Directory.GetDirectories(Users + @"\Music");
+                    foreach (string folders in MusicDir)    // Same thing for music directory
+                    {
+                        if(!namePath.ContainsValue(folders))
+                            Add_Folder_View(folders); //add selected folder
+                    }
+                }
+                catch (UnauthorizedAccessException) { } //if you eneter a directory your not allowed to.
+                catch { } // All Other exceptions
+
+            }
 
         }
 
@@ -170,36 +183,18 @@ namespace musicPlayer00
 
         //add folder to TreeView
         /*
-         * I changed it so that it goes straight to the Music Diectery
-         * and adds the folders inside..
-         * It doesnot add the folders nested inside other folders.
-         * I commented the old version incase you have it somewhere else.
+         *I moved the code to grab the music files to the
+         * function that runs on start so it will automatically
+         * grab all folders from music
          */
         private void Add_Folder(object sender, RoutedEventArgs e)
         {
             
-            string[] dir = Directory.GetDirectories(@"c:\Users");  //Enters the C drive and goues staight to the User directory
-            foreach (string Users in dir)   // gets the path of each item (file, Folder, directory) in the Users Directory
-            {
-                try
-                {
-                    string[] MusicDir = Directory.GetDirectories(Users + @"\Music");
-                    foreach (string folders in MusicDir)    // Same thing for music directory
-                    {
-                            Add_Folder_View(folders); //add selected folder
-                    }
-                }
-                catch (UnauthorizedAccessException) { } //if you eneter a directory your not allowed to.
-                catch { } // All Other exceptions
-
-            }
-
-                    //The olde version in case you like selecting yours manually
-            /*FolderBrowserDialog fbd  = new FolderBrowserDialog(); //to view folders
+             FolderBrowserDialog fbd  = new FolderBrowserDialog(); //to view folders
              if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK) 
              {
                  Add_Folder_View(fbd.SelectedPath); //add selected folder
-             }*/
+             }
         }
 
         private void ListBoxItem_Selected(object sender, RoutedEventArgs e)
@@ -226,7 +221,11 @@ namespace musicPlayer00
         private void Delete(object sender, RoutedEventArgs e)   //delete folder
         {
             folderDisplay.Items.Remove(folderDisplay.SelectedItem); // Removes selected folder from TreeView
-            namePath.Remove(selectedHeader);
+            try
+            {
+                namePath.Remove(selectedHeader);
+            }
+            catch (Exception) { }
         }
         // Delete folders that no longer exist when app starts up
         private void Remove_Folder_View(String fn)
