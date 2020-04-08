@@ -12,21 +12,17 @@ using System.ComponentModel;
 using System.Windows.Markup;
 using System.Timers;
 using MessageBox = System.Windows.Forms.MessageBox;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace musicPlayer00
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
-        Dictionary<string,string> namePath = new Dictionary<string, string>(); //Key: name of folder | Value: path of folder
-        Dictionary<string, string> songPath = new Dictionary<string, string>(); //Key is combination of song name and folder name | Value : song path
-        PlaylistHolder plHolder = new PlaylistHolder();
 
+        PlaylistHolder plHolder = new PlaylistHolder();
         WMPLib.WindowsMediaPlayer player = new WMPLib.WindowsMediaPlayer();
-        String selectedHeader = null; //holds selected folder
-        String currentlyPlaying; //holds currently playing song
+        Playlist selectedHeader = null; //holds selected folder
+        Song currentlyPlaying; //holds currently playing song
         bool playing = false; //if song is playing
         bool paused = false; //if song is paused
         // State it goes through playlest
@@ -39,25 +35,17 @@ namespace musicPlayer00
         {
             DataContext = this;
             InitializeComponent();
-            string path = Directory.GetCurrentDirectory();
             player.PlayStateChange += new WMPLib._WMPOCXEvents_PlayStateChangeEventHandler(Player_ChangedState); //windows media state change function
-            //player.PlayStateChange += new WMPLib._WMPOCXEvents_PlayStateChangeEventHandler(Playthorugh_ChangedState);
-            path += @"\Saved_Data.txt";
-            if (File.Exists(path)) //check for folders from previous sessions and add them to treeview
+            if (File.Exists("PlHolderData.dat"))
             {
-                string[] text = File.ReadAllLines(path, Encoding.UTF8);
-                foreach(string line in text)
+                Stream stream = File.Open("PlHolderData.dat", FileMode.Open);
+                BinaryFormatter bf = new BinaryFormatter();
+                plHolder = (PlaylistHolder)bf.Deserialize(stream);
+                foreach(Playlist pl in plHolder.getPlaylists())
                 {
-                    try
-                    {
-                        Add_Folder_View(line); //add folders form the text file to treeview
-                    }
-                    catch(NullReferenceException) //folder no longer exists or is in a different path
-                    {
-                        return;
-                    }
+                    Add_Folder_View(pl);
                 }
-            }
+            } 
 
             //Moved code to get songs from music directory here so it does it on start
 
@@ -69,8 +57,9 @@ namespace musicPlayer00
                     string[] MusicDir = Directory.GetDirectories(Users + @"\Music");
                     foreach (string folders in MusicDir)    // Same thing for music directory
                     {
-                        if(!namePath.ContainsValue(folders))
-                            Add_Folder_View(folders); //add selected folder
+                        Playlist pl = new Playlist(getFileName(folders), folders, plHolder.getMaxPosition());
+                        if(!plHolder.containsPlaylist(pl))
+                            Add_Folder_View(pl); //add selected folder
                     }
                 }
                 catch (UnauthorizedAccessException) { } //if you eneter a directory your not allowed to.
@@ -83,12 +72,11 @@ namespace musicPlayer00
         //changes button based on what is selected
         private void SongView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            string name;
-            string key;
+            Song song;
             if (SongView.SelectedItem != null && selectedHeader != null) //if selected and song is playing
             {
-                name = SongView.SelectedItem.ToString();
-                key = name + selectedHeader;
+                System.Windows.Controls.ListViewItem lvi = SongView.SelectedItem as System.Windows.Controls.ListViewItem;
+                song = lvi.Tag as Song;
             }
             else
             {
@@ -96,11 +84,11 @@ namespace musicPlayer00
                     PlayButton.Content = "Pause";
                 return;
             }
-            if(currentlyPlaying != null && !songPath[key].Equals(currentlyPlaying)) //new song selected to play
+            if(currentlyPlaying != null && !(song == currentlyPlaying)) //new song selected to play
             {
                 PlayButton.Content = "Play";
             }
-            else if(currentlyPlaying != null && songPath[key].Equals(currentlyPlaying)) //moved back to current song to pause
+            else if(currentlyPlaying != null && song == currentlyPlaying) //moved back to current song to pause
             {
                 PlayButton.Content = "Pause";
             }
@@ -110,17 +98,16 @@ namespace musicPlayer00
         {
             try
             {
-
-                String name = SongView.SelectedItem.ToString();
-                String key = name + selectedHeader;
-                Slider.Maximum = Song_Duration() + 1; // Sets song length to slider max value
+                Playlist pl = selectedHeader;
+                System.Windows.Controls.ListViewItem lvi = SongView.SelectedItem as System.Windows.Controls.ListViewItem;
+                Song song = lvi.Tag as Song;
+                Slider.Maximum = Song_Duration(); // Sets song length to slider max value
                 TxtSliderMaxValue.Text = Song_Duration().ToString(); // shows song length at right of slider
-                if ((!playing && !paused) || (SongView.SelectedItem != null && !songPath[key].Equals(currentlyPlaying))) //play new song
+                if ((!playing && !paused) || (SongView.SelectedItem != null && !(song == currentlyPlaying))) //play new song
                 {
                     Console.WriteLine("New Song");
-                    String song = songPath[key];
                     currentlyPlaying = song; //set currently playing song to song path
-                    player.URL = song;
+                    player.URL = song.getPath();
                     Play_Seek();
                     player.controls.play();
                 }
@@ -172,6 +159,7 @@ namespace musicPlayer00
             {
                 paused = true;
                 playing = false;
+                currentlyPlaying = null;
                 PlayButton.Content = "Play";
             } else if(state == (int)WMPLib.WMPPlayState.wmppsPlaying) //when media player is playing
             {
@@ -193,78 +181,74 @@ namespace musicPlayer00
              FolderBrowserDialog fbd  = new FolderBrowserDialog(); //to view folders
              if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK) 
              {
-                 Add_Folder_View(fbd.SelectedPath); //add selected folder
+                Playlist pl = new Playlist(getFileName(fbd.SelectedPath), fbd.SelectedPath, plHolder.getMaxPosition());
+                if (!plHolder.containsPlaylist(pl))
+                {
+                    plHolder.addPlaylist(pl); //add selected folder
+                    Add_Folder_View(pl);
+                }
              }
         }
 
-        private void ListBoxItem_Selected(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         //add folder to treeview
-        private void Add_Folder_View(String fn)
+        private void Add_Folder_View(Playlist pl)
         {
-            String tmp = getFileName(fn); //convert path to just name of folder
-            if (tmp == "")
-                tmp = fn;
-            for(int i = 0; namePath.ContainsKey(tmp) != false; i++) //if there are files with the same name this will append number
-            {
-                tmp += i.ToString();
-            }
-            namePath.Add(tmp, fn); //tmp = name that shows up in view, fn = path
-            TreeViewItem tmpTVI = new TreeViewItem { Header = tmp }; //make treeviewitem with tmp as header
+            TreeViewItem tmpTVI = new TreeViewItem{Header = pl.getName(), Tag = pl}; //make treeviewitem with tmp as header
             folderDisplay.Items.Add(tmpTVI);
         }
 
         // Delete selected folder from tree view
         private void Delete(object sender, RoutedEventArgs e)   //delete folder
         {
+            TreeViewItem tvi = folderDisplay.SelectedItem as TreeViewItem;
             folderDisplay.Items.Remove(folderDisplay.SelectedItem); // Removes selected folder from TreeView
             try
             {
-                namePath.Remove(selectedHeader);
+                plHolder.removePlaylist(tvi.Tag as Playlist);
             }
             catch (Exception) { }
         }
         // Delete folders that no longer exist when app starts up
-        private void Remove_Folder_View(String fn)
+        private void Remove_Folder_View(Playlist fn)
         {
             folderDisplay.Items.Remove(fn); //remove folder from view
-            namePath.Remove(selectedHeader); //remove deleted file from dictionary
-        }
-
-        private void TreeViewClick()
-        {
-            //TreeViewItem.
+            plHolder.removePlaylist(fn); //remove deleted file from dictionary
         }
 
         //shows contents of selected folder
         private void Selected_Folder(object sender, RoutedEventArgs e)
         {
             SongView.Items.Clear(); //clear current songview
-            var item = folderDisplay.SelectedItem as TreeViewItem; //current folder
+            TreeViewItem item = folderDisplay.SelectedItem as TreeViewItem;
             try
             {
-                selectedHeader = item.Header.ToString();
-                String path;
-                if (namePath.ContainsKey(selectedHeader)) //so it doesn't error when the default files are clicked
-                    path = namePath[selectedHeader];
-                else return;
-                var songs = Directory.EnumerateFiles(path).Where(s => s.EndsWith(".mp3") || s.EndsWith(".wav")); //only select mp3 files can be modified to add mp4 or other types easily
+                selectedHeader = (Playlist)item.Tag; //current folder
+                Playlist pl;
+                pl = selectedHeader;
+                var songs = Directory.EnumerateFiles(pl.getPath()).Where(s => s.EndsWith(".mp3") || s.EndsWith(".wav")); //only select mp3 files can be modified to add mp4 or other types easily
                 foreach (String song in songs)
                 {
                     string tmp = getFileName(song).Replace(".mp3","").Replace(".wav",""); //convert path to file name and remove .mp3 from end
-                    string key = tmp+selectedHeader; //key value pair for dictionary (folder & song path)
-                    if (songPath.ContainsKey(key) && songPath[key].Equals(song))
+                    Song tmpSong = new Song(pl, tmp, pl.getMaxPosition() + 1, song);
+                    if (!pl.alreadyHasSong(tmpSong))
                     {
-                        SongView.Items.Add(tmp);
-                        continue;
+                        pl.addSong(tmpSong);
                     }
-                    else if (songPath.ContainsKey(key) && !songPath[key].Equals(song))
-                        songPath.Remove(key);
-                    songPath.Add(key, song); //key = name of song, value (song) = path of song
-                    SongView.Items.Add(tmp); //add each song to songview
+                }
+                pl.sortSongs();
+                    foreach (Song song in pl.getSongs())
+                    {
+                        try
+                        {
+                            if (File.Exists(song.getPath()))
+                            {
+                                System.Windows.Controls.ListViewItem lvi = new System.Windows.Controls.ListViewItem { Content = song.getName(), Tag = song };
+                                SongView.Items.Add(lvi);
+                            }
+                        } catch (DirectoryNotFoundException ex) { //If song moved out of folder
+                            Console.WriteLine(ex);
+                            pl.removeSong(song); 
+                        }
                 }
             }
             catch (DirectoryNotFoundException) //if directory deleted remove folder from treeview
@@ -287,12 +271,14 @@ namespace musicPlayer00
         {
             string[] files = (string[])e.Data.GetData(System.Windows.Forms.DataFormats.FileDrop, false); //get dragged files
             var songs = files.Where(s => s.EndsWith(".mp3") || s.EndsWith(".wav")); //select only music files
-            string currentPath = namePath[selectedHeader]; //gets current path
+            Playlist pl = selectedHeader;
+            string currentPath = selectedHeader.getPath(); //gets current path
             foreach (string song in songs)
             {
                try
                 {
-                File.Copy(song, currentPath + @"\" + getFileName(song), false);
+                    File.Copy(song, currentPath + @"\" + getFileName(song), false);
+                    Song songToAdd = new Song(pl, getFileName(song), pl.getMaxPosition() + 1, currentPath + @"\" + getFileName(song));
                 }
                catch (System.IO.IOException)
                {
@@ -305,9 +291,10 @@ namespace musicPlayer00
         //Saves current folders
         private void On_Close(object sender, EventArgs e)
         {
-            using (StreamWriter file = new StreamWriter("Saved_Data.txt"))
-                foreach (var folder in namePath)
-                    file.WriteLine("{0}", folder.Value);
+            File.Delete("PlHolderData.dat");
+            Stream stream = File.Create("PlHolderData.dat");
+            BinaryFormatter bf = new BinaryFormatter();
+            bf.Serialize(stream, plHolder);
         }
 
         /*
@@ -345,13 +332,16 @@ namespace musicPlayer00
         private int Song_Duration()
         {
             int SongLength = 0;
-            String key = SongView.SelectedItem.ToString() + selectedHeader;
-            string currentDirName = @"" + songPath[key];
+            Playlist pl = selectedHeader;
+            System.Windows.Controls.ListViewItem lvi = SongView.SelectedItem as System.Windows.Controls.ListViewItem;
+            Song key = lvi.Tag as Song;
+
+            string currentDirName = @"" + key.getPath();
                      
             System.IO.FileInfo fi = null;   // Completely Different from String
             try
             {
-                fi = new System.IO.FileInfo(songPath[key].ToString());
+                fi = new System.IO.FileInfo(currentDirName);
             }
             catch
             { Console.WriteLine("Failed to get song Legnth"); }
@@ -408,6 +398,5 @@ namespace musicPlayer00
             TxtSliderValue.Text = Slider.Value.ToString();
             player.controls.currentPosition = Slider.Value;
         }
-
     }
 }
