@@ -398,5 +398,10 @@ namespace musicPlayer00
             TxtSliderValue.Text = Slider.Value.ToString();
             player.controls.currentPosition = Slider.Value;
         }
+
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Application.Current.Shutdown();
+        }
     }
 }
