@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.IO;
 using Microsoft.Win32;
-using System.Windows.Forms;
 using System.Windows.Controls;
 using System.ComponentModel;
 using System.Windows.Markup;
@@ -23,7 +22,6 @@ namespace musicPlayer00
         WMPLib.WindowsMediaPlayer player = new WMPLib.WindowsMediaPlayer();
         Playlist selectedHeader = null; //holds selected folder
         Song currentlyPlaying; //holds currently playing song
-        bool playing = false; //if song is playing
         bool paused = false; //if song is paused
         // State it goes through playlest
         bool repeat = false;
@@ -98,42 +96,45 @@ namespace musicPlayer00
         {
             try
             {
-                Playlist pl = selectedHeader;
-                System.Windows.Controls.ListViewItem lvi = SongView.SelectedItem as System.Windows.Controls.ListViewItem;
+                Playlist pl = (Playlist)folderDisplay.Tag;
+                ListViewItem lvi = SongView.SelectedItem as ListViewItem;
                 Song song = lvi.Tag as Song;
-                Slider.Maximum = Song_Duration(); // Sets song length to slider max value
-                TxtSliderMaxValue.Text = Song_Duration().ToString(); // shows song length at right of slider
-                if ((!playing && !paused) || (SongView.SelectedItem != null && !(song == currentlyPlaying))) //play new song
-                {
-                    Console.WriteLine("New Song");
-                    currentlyPlaying = song; //set currently playing song to song path
-                    player.URL = song.getPath();
-                    Play_Seek();
-                    player.controls.play();
-                }
-                else if (!playing && paused) //continue playing
-                {
-                    Console.WriteLine("Continue playing");
-                    player.controls.play();
-                    Play_Seek();
-                }
-                else
-                {
-                    Console.WriteLine("Paused");
-                    Play_Seek();
-                    player.controls.pause();
-                }
-
-
+                Play(pl, song);
             }
+
             catch (NullReferenceException) //no song selected
             {
                 Console.WriteLine("No Song Selected");
-                if (currentlyPlaying != null && playing) //if song is currently playing it will pause
+                if (currentlyPlaying != null && !paused) //if song is currently playing it will pause
                     player.controls.pause();
-                else if (currentlyPlaying != null && !playing) //if song currently paused it will play
+                else if (currentlyPlaying != null && paused) //if song currently paused it will play
                     player.controls.play();
                 return;
+            }
+        }
+        private void Play(Playlist pl, Song song)
+        {
+            if (!(song == currentlyPlaying)) //play new song
+            {
+                currentlyPlaying = song;
+                Slider.Maximum = Song_Duration(); // Sets song length to slider max value
+                TxtSliderMaxValue.Text = Song_Duration().ToString(); // shows song length at right of slider
+                Console.WriteLine("New Song");
+                player.URL = song.getPath();
+                Play_Seek();
+                player.controls.play();
+            }
+            if (paused) //continue playing
+            {
+                Console.WriteLine("Continue playing");
+                player.controls.play();
+                Play_Seek();
+            }
+            else
+            {
+                Console.WriteLine("Paused");
+                Play_Seek();
+                player.controls.pause();
             }
         }
 
@@ -146,27 +147,25 @@ namespace musicPlayer00
 
         void Player_ChangedState(int state) //Actions when media player changes state
         {
-            if(state == (int)WMPLib.WMPPlayState.wmppsMediaEnded) //when media player ends song
+            if (state == (int)WMPLib.WMPPlayState.wmppsMediaEnded) //when media player ends song
             {
                 paused = false;
-                playing = false;
                 currentlyPlaying = null;
                 player.controls.currentPosition = 0;
                 PlayButton.Content = "Play";
                 Play_Click(new object(), new RoutedEventArgs());
             }
-            else if(state == (int)WMPLib.WMPPlayState.wmppsPaused) //when media player is paused
+            else if (state == (int)WMPLib.WMPPlayState.wmppsPaused) //when media player is paused
             {
                 paused = true;
-                playing = false;
-                currentlyPlaying = null;
                 PlayButton.Content = "Play";
-            } else if(state == (int)WMPLib.WMPPlayState.wmppsPlaying) //when media player is playing
+            }
+            else if (state == (int)WMPLib.WMPPlayState.wmppsPlaying) //when media player is playing
             {
-                playing = true;
+                paused = false;
                 PlayButton.Content = "Pause";
             }
-            
+
         }
 
         //add folder to TreeView
@@ -178,7 +177,7 @@ namespace musicPlayer00
         private void Add_Folder(object sender, RoutedEventArgs e)
         {
             
-             FolderBrowserDialog fbd  = new FolderBrowserDialog(); //to view folders
+             System.Windows.Forms.FolderBrowserDialog fbd  = new System.Windows.Forms.FolderBrowserDialog(); //to view folders
              if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK) 
              {
                 Playlist pl = new Playlist(getFileName(fbd.SelectedPath), fbd.SelectedPath, plHolder.getMaxPosition());
@@ -198,16 +197,19 @@ namespace musicPlayer00
         }
 
         // Delete selected folder from tree view
+        // Delete selected folder from tree view
         private void Delete(object sender, RoutedEventArgs e)   //delete folder
         {
             TreeViewItem tvi = folderDisplay.SelectedItem as TreeViewItem;
             folderDisplay.Items.Remove(folderDisplay.SelectedItem); // Removes selected folder from TreeView
+            SongView.Items.Clear();
             try
             {
                 plHolder.removePlaylist(tvi.Tag as Playlist);
             }
             catch (Exception) { }
         }
+
         // Delete folders that no longer exist when app starts up
         private void Remove_Folder_View(Playlist fn)
         {
@@ -262,6 +264,29 @@ namespace musicPlayer00
             }
         }
 
+        private void Shuffle_Click(object sender, RoutedEventArgs e)
+        {
+            Shuffle_Songs();
+        }
+
+        private void Shuffle_Songs()
+        {
+            try
+            {
+                Playlist randPL = plHolder.getRandomPlaylist();
+                Song randSong = randPL.getRandomSong();
+                selectedHeader = randPL;
+                SongView.SelectedItem = null;
+                paused = false;
+                currentlyPlaying = null;
+                Play(randPL, randSong);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("There are no songs to shuffle!", "Error");
+            }
+        }
+
         /*
          Add song to playlist it will take mp3 files dragged into the listview and then add them
          currently if there is another song with the same name it won't overwrite it
@@ -291,15 +316,10 @@ namespace musicPlayer00
         //Saves current folders
         private void On_Close(object sender, EventArgs e)
         {
-            File.Delete("PlHolderData.dat");
             Stream stream = File.Create("PlHolderData.dat");
             BinaryFormatter bf = new BinaryFormatter();
             bf.Serialize(stream, plHolder);
         }
-
-        /*
-         *Peripheral METHODS 
-         */
 
          //reverse string
         private String reverse(String str)
@@ -333,11 +353,10 @@ namespace musicPlayer00
         {
             int SongLength = 0;
             Playlist pl = selectedHeader;
-            System.Windows.Controls.ListViewItem lvi = SongView.SelectedItem as System.Windows.Controls.ListViewItem;
-            Song key = lvi.Tag as Song;
+            Song key = currentlyPlaying;
 
             string currentDirName = @"" + key.getPath();
-                     
+
             System.IO.FileInfo fi = null;   // Completely Different from String
             try
             {
@@ -353,7 +372,7 @@ namespace musicPlayer00
             //Console.WriteLine("double {0}", l.Properties.Duration.TotalSeconds);
             return SongLength;
         }
-        
+
         private void Play_Prev(object sender, RoutedEventArgs e)//play the previous song in the current playlist
         {
             if (SongView.SelectedItem == null)

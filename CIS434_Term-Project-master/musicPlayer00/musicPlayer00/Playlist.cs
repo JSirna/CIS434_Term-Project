@@ -22,6 +22,7 @@ namespace musicPlayer00
             this.name = name;
             this.path = path;
             this.position = position;
+            this.size = songs.Count();
         }
 
         //add song to playlist
@@ -32,18 +33,12 @@ namespace musicPlayer00
         }
 
         //gets random song from playlist
-        public void getRandomSong() // source: stackoverflow.com/questions/5383498/shuffle-rearrange-randomly-a-liststring
+        public Song getRandomSong()
         {
-            int n = this.songs.Count;
+            int n = songs.Count();
             Random rnd = new Random();
-            while (n > 1)
-            {
-                int k = (rnd.Next(0, n) % n);
-                n--;
-                Song value = this.songs[k];
-                this.songs[k] = this.songs[n];
-                this.songs[n] = value;
-            }
+            int k = rnd.Next(0, n);
+            return songs[k];
         }
         
         //input name of song, returns song

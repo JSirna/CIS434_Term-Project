@@ -70,6 +70,17 @@ namespace musicPlayer00
         {
             return playlists;
         }
+        public Playlist getRandomPlaylist()
+        {
+            Playlist[] tmp = playlists.Where(e => e.size > 0).ToArray();
+            Random rnd = new Random();
+            int n = tmp.Count() - 1;
+            if (tmp.Count() < 1)
+                throw new NullReferenceException();
+            int k = rnd.Next(0, n);
+            Console.WriteLine(n);
+            return tmp[k];
+        }
 
         //serialization
         public void GetObjectData(SerializationInfo info, StreamingContext context)
