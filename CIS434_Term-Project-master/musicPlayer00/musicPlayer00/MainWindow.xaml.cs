@@ -43,28 +43,21 @@ namespace musicPlayer00
                 {
                     Add_Folder_View(pl);
                 }
-            } 
-
-            //Moved code to get songs from music directory here so it does it on start
-
-            string[] dir = Directory.GetDirectories(@"c:\Users");  //Enters the C drive and goues staight to the User directory
-            foreach (string Users in dir)   // gets the path of each item (file, Folder, directory) in the Users Directory
-            {
-                try
-                {
-                    string[] MusicDir = Directory.GetDirectories(Users + @"\Music");
-                    foreach (string folders in MusicDir)    // Same thing for music directory
-                    {
-                        Playlist pl = new Playlist(getFileName(folders), folders, plHolder.getMaxPosition());
-                        if(!plHolder.containsPlaylist(pl))
-                            Add_Folder_View(pl); //add selected folder
-                    }
-                }
-                catch (UnauthorizedAccessException) { } //if you eneter a directory your not allowed to.
-                catch { } // All Other exceptions
-
             }
 
+            string myMusicPath = Environment.GetFolderPath(Environment.SpecialFolder.MyMusic); //using Environment instead of hard-code
+            try
+            {
+                string[] MusicDir = Directory.GetDirectories(myMusicPath);
+                foreach (string folders in MusicDir) 
+                {
+                    Playlist pl = new Playlist(getFileName(folders), folders, plHolder.getMaxPosition());
+                    if (!plHolder.containsPlaylist(pl))
+                        Add_Folder_View(pl); //add selected folder
+                }
+            }
+            catch (UnauthorizedAccessException) { } //if you enter a directory your not allowed to.
+            catch { } // All Other exceptions
         }
 
         //changes button based on what is selected
