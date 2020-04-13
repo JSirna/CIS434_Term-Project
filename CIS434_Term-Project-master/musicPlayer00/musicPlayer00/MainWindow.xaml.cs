@@ -9,7 +9,7 @@ using Microsoft.Win32;
 using System.Windows.Controls;
 using System.ComponentModel;
 using System.Windows.Markup;
-using System.Timers;
+using System.Windows.Threading;
 using MessageBox = System.Windows.Forms.MessageBox;
 using System.Runtime.Serialization.Formatters.Binary;
 
@@ -58,6 +58,21 @@ namespace musicPlayer00
             }
             catch (UnauthorizedAccessException) { } //if you enter a directory your not allowed to.
             catch { } // All Other exceptions
+
+            // Threading a clock for the timer & slider
+            DispatcherTimer dTimer = new DispatcherTimer();
+            dTimer.Interval = new TimeSpan(0, 0, 1);
+            dTimer.Tick += dTimer_sec;
+            dTimer.Start();
+        }
+
+        // What happens every second (Threading timer)
+        private void dTimer_sec(Object sender, EventArgs e)
+        {
+            if ((paused == false))
+            {
+                Slider.Value = (int)player.controls.currentPosition;
+            }
         }
 
         //changes button based on what is selected
@@ -111,7 +126,7 @@ namespace musicPlayer00
             {
                 currentlyPlaying = song;
                 Slider.Maximum = Song_Duration(); // Sets song length to slider max value
-                TxtSliderMaxValue.Text = Song_Duration().ToString(); // shows song length at right of slider
+                TxtSliderMaxValue.Content = Song_Duration().ToString(); // shows song length at right of slider
                 Console.WriteLine("New Song");
                 player.URL = song.getPath();
                 Play_Seek();
@@ -407,8 +422,28 @@ namespace musicPlayer00
         // Half seek, it doesn't move the slider every second but if you move the slider it will go to that second of the song.
         private void Slider_Value_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            TxtSliderValue.Text = Slider.Value.ToString();
-            player.controls.currentPosition = Slider.Value;
+
+            //TimeSpan min = TimeSpan.FromMinutes(Slider.Value);
+            TxtSliderValue.Content = convertToString(Slider.Value);
+            if ((int)player.controls.currentPosition != Slider.Value)
+            {
+                player.controls.currentPosition = Slider.Value;
+            }
+            //player.controls.currentPosition = Slider.Value;
+        }
+        public string convertToString(double timeInSec)
+        {
+            int sec = (int)timeInSec % 60;
+            int min = (int)Math.Floor(timeInSec / 60);
+            if (sec >= 10)
+            {
+                return min.ToString() + ":" + sec.ToString();
+            }
+            else
+            {
+                return min.ToString() + ":0" + sec.ToString();
+            }
+
         }
 
         private void Exit_Click(object sender, RoutedEventArgs e)
@@ -416,4 +451,8 @@ namespace musicPlayer00
             System.Windows.Application.Current.Shutdown();
         }
     }
+
+   
+
+   
 }
