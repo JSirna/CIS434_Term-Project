@@ -371,7 +371,7 @@ namespace musicPlayer00
                 fi = new System.IO.FileInfo(currentDirName);
             }
             catch
-            { Console.WriteLine("Failed to get song Legnth"); }
+            { Console.WriteLine("Failed to get song Length"); }
 
             //Console.WriteLine("{0} : {1}", fi.Length, fi.Directory);  //length and name of file
 

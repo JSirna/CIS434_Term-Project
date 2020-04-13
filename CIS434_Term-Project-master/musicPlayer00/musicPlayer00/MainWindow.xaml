@@ -7,7 +7,7 @@
         xmlns:Properties="clr-namespace:musicPlayer00.Properties" x:Class="musicPlayer00.MainWindow"
         mc:Ignorable="d"
         Title="Music Player ver 00" Height="464.753" Width="829.509" Topmost="True" Cursor="Arrow" WindowStartupLocation="CenterScreen"
-        Closing="On_Close">
+        Closing="On_Close" ResizeMode="CanMinimize">
     <Grid Margin="0,0,0,29">
         <!--<Grid.ColumnDefinitions>
             <ColumnDefinition Width="18*"/>
