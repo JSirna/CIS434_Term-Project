@@ -126,7 +126,7 @@ namespace musicPlayer00
             {
                 currentlyPlaying = song;
                 Slider.Maximum = Song_Duration(); // Sets song length to slider max value
-                TxtSliderMaxValue.Content = Song_Duration().ToString(); // shows song length at right of slider
+                TxtSliderMaxValue.Content = convertToString(Song_Duration()); // shows song length at right of slider
                 Console.WriteLine("New Song");
                 player.URL = song.getPath();
                 Play_Seek();
@@ -201,7 +201,7 @@ namespace musicPlayer00
         private void Add_Folder_View(Playlist pl)
         {
             TreeViewItem tmpTVI = new TreeViewItem{Header = pl.getName(), Tag = pl}; //make treeviewitem with tmp as header
-            folderDisplay.Items.Add(tmpTVI);
+            folderDisplay.Items.Add(CreateTreeItem(tmpTVI, pl));
         }
 
         // Delete selected folder from tree view
@@ -230,45 +230,58 @@ namespace musicPlayer00
         {
             SongView.Items.Clear(); //clear current songview
             TreeViewItem item = folderDisplay.SelectedItem as TreeViewItem;
-            try
+            if (item == null)
+                Console.WriteLine("No item was selected to display files");
+            else
             {
-                selectedHeader = (Playlist)item.Tag; //current folder
-                Playlist pl;
-                pl = selectedHeader;
-                var songs = Directory.EnumerateFiles(pl.getPath()).Where(s => s.EndsWith(".mp3") || s.EndsWith(".wav")); //only select mp3 files can be modified to add mp4 or other types easily
-                foreach (String song in songs)
+                try
                 {
-                    string tmp = getFileName(song).Replace(".mp3","").Replace(".wav",""); //convert path to file name and remove .mp3 from end
-                    Song tmpSong = new Song(pl, tmp, pl.getMaxPosition() + 1, song);
-                    if (!pl.alreadyHasSong(tmpSong))
+                    Playlist pl = null;
+                    //pl = selectedHeader;
+                    if (item.Tag is Playlist)
+                        pl = (item.Tag as Playlist);
+                    var songs = Directory.EnumerateFiles(pl.getPath()); //Enumerate files is the only one that actually returns the files into listview
+                    foreach (string folder in songs)
                     {
-                        pl.addSong(tmpSong);
+                        Song tmp = new Song(pl, getFileName(folder), pl.getMaxPosition() + 1, folder);
+                        if (!pl.alreadyHasSong(tmp))
+                        {
+                            pl.addSong(tmp);
+                        }
                     }
-                }
-                pl.sortSongs();
+                    pl.sortSongs();
                     foreach (Song song in pl.getSongs())
                     {
                         try
                         {
                             if (File.Exists(song.getPath()))
                             {
-                                System.Windows.Controls.ListViewItem lvi = new System.Windows.Controls.ListViewItem { Content = song.getName(), Tag = song };
-                                SongView.Items.Add(lvi);
+                                if (!song.getName().EndsWith(".jpg") && !song.getName().EndsWith(".ini") && !song.getName().EndsWith(".db")
+                                    && !song.getName().EndsWith(".wpl") && !song.getName().EndsWith(".pla") && !song.getName().EndsWith(".png"))
+                                {
+                                    TagLib.File songThing = TagLib.File.Create(song.getPath());
+                                    string title = songThing.Tag.Title == "" || songThing.Tag.Title == null ? song.getName().Replace(".mp3", "") : songThing.Tag.Title;
+                                    ListViewItem lvi = new ListViewItem { Content = title, Tag = song };
+                                    SongView.Items.Add(lvi);
+                                }
                             }
-                        } catch (DirectoryNotFoundException ex) { //If song moved out of folder
-                            Console.WriteLine(ex);
-                            pl.removeSong(song); 
                         }
+                        catch (DirectoryNotFoundException ex)
+                        { //If song moved out of folder
+                            Console.WriteLine(ex);
+                            pl.removeSong(song);
+                        }
+                    }
                 }
-            }
-            catch (DirectoryNotFoundException) //if directory deleted remove folder from treeview
-            {
-                Remove_Folder_View(selectedHeader); //remove file from view
-                return;
-            }
-            catch (NullReferenceException)
-            {
-                return;
+                catch (DirectoryNotFoundException) //if directory deleted remove folder from treeview
+                {
+                    Remove_Folder_View(selectedHeader); //remove file from view
+                    return;
+                }
+                catch (NullReferenceException)
+                {
+                    return;
+                }
             }
         }
 
@@ -449,6 +462,54 @@ namespace musicPlayer00
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.Application.Current.Shutdown();
+        }
+
+        private void TreeView_Expansion(object sender, RoutedEventArgs e) //currently works for only one subfolder :(
+        {
+            TreeViewItem item = e.OriginalSource as TreeViewItem;
+            TreeViewItem newItem;
+
+            string newPath = "";
+            string myMusicPath = Environment.GetFolderPath(Environment.SpecialFolder.MyMusic);
+            string[] dirs = Directory.GetDirectories(myMusicPath); //can't get a path from a treeview item, so this is hard-coded...
+
+            foreach (string dir in dirs) //each dir is my path, and I want the path that contains the item.Header
+            {
+                if (dir.Contains(item.Header.ToString()))
+                {
+                    newPath = dir;
+                    Console.WriteLine("New Path: " + newPath);
+                }
+            }
+            if ((item.Items.Count == 1) && (item.Items[0] is string))
+            {
+                item.Items.Clear();
+                Playlist pl = new Playlist(item.HeaderStringFormat, newPath, plHolder.getMaxPosition());
+
+                try
+                {
+                    #region The stuff that works
+                    string[] subFolders = Directory.GetDirectories(pl.getPath());
+                    foreach (var subDir in subFolders)
+                    {
+                        pl = new Playlist(getFileName(subDir), subDir, pl.getMaxPosition());
+                        newItem = new TreeViewItem { Header = pl.getName(), Tag = pl };
+                        item.Items.Add(CreateTreeItem(newItem, pl));
+                    }
+                    #endregion
+                }
+                catch { Console.WriteLine("Something caught in the Expansion method"); }
+            }
+        }
+
+        private TreeViewItem CreateTreeItem(TreeViewItem o, Playlist plObject)
+        {
+            TreeViewItem item = new TreeViewItem();
+            item.Header = o.Header;
+            item.Tag = plObject;
+            item.Items.Add("Loading...");
+            //Console.WriteLine(item.Header);
+            return item;
         }
     }
 

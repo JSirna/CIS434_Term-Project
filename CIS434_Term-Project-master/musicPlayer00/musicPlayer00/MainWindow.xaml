@@ -9,26 +9,27 @@
         Title="Music Player ver 00" Height="464.753" Width="829.509" Topmost="True" Cursor="Arrow" WindowStartupLocation="CenterScreen"
         Closing="On_Close" ResizeMode="CanMinimize">
     <Grid Margin="0,0,0,29">
-        <!--<Grid.ColumnDefinitions>
-            <ColumnDefinition Width="18*"/>
-            <ColumnDefinition Width="119*"/>
-        </Grid.ColumnDefinitions>-->
         <DockPanel Grid.ColumnSpan="2">
             <Menu DockPanel.Dock="Top" VerticalAlignment="Top" SnapsToDevicePixels="True">
                 <MenuItem Header="_File">
-                    <!--<MenuItem Header="_New" />-->
                     <MenuItem Header="_Open" Click="Add_Folder" />
-                    <MenuItem Header="_Save" />
+                    <!--<MenuItem Header="_Save" />-->
                     <Separator />
                     <MenuItem Header="_Exit" Click="Exit_Click" />
                 </MenuItem>
             </Menu>
 
         </DockPanel>
-        <TreeView x:Name="folderDisplay" Width="161" HorizontalAlignment="Left" Margin="0,20,0,132" Grid.ColumnSpan="2" MouseUp="Selected_Folder" SnapsToDevicePixels="True" ScrollViewer.CanContentScroll="True" RenderTransformOrigin="0.5,0.5" IsManipulationEnabled="True"/>
+        <TreeView x:Name="folderDisplay" TreeViewItem.Expanded="TreeView_Expansion" Width="194" HorizontalAlignment="Left" Margin="0,20,0,132" MouseUp="Selected_Folder" SnapsToDevicePixels="True" ScrollViewer.CanContentScroll="True" RenderTransformOrigin="0.5,0.5" IsManipulationEnabled="True"/>
 
-        <ListView x:Name="SongView" SnapsToDevicePixels="True" ClipToBounds="True" Margin="166,20,18,132" MouseDoubleClick="Play_Click" AllowDrop="True" DragDrop.Drop="Add_To_Playlist"  SelectionChanged="SongView_SelectionChanged"/>
-       
+        <ListView x:Name="SongView" SnapsToDevicePixels="True" ClipToBounds="True" Margin="199,20,18,132" MouseDoubleClick="Play_Click" AllowDrop="True" DragDrop.Drop="Add_To_Playlist"  SelectionChanged="SongView_SelectionChanged">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Song Name"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
         <Grid Margin="2,273,18,-24" ScrollViewer.VerticalScrollBarVisibility="Disabled" ClipToBounds="True" SnapsToDevicePixels="True" IsManipulationEnabled="True">
             <Button Margin="401.261,31,330.739,31" HorizontalAlignment="Center" Width="51" VerticalAlignment="Center" Height="47" Click="Play_Click" x:Name="PlayButton" Content="Play" BorderThickness="1" UseLayoutRounding="False" ToolTip="Play Selected Song" ClipToBounds="True" SnapsToDevicePixels="True" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsManipulationEnabled="True"/>
             <Button Margin="0,31,240.312,31" HorizontalAlignment="Right" Width="51" VerticalAlignment="Center" Height="47" Click="Play_Next" x:Name="NextButton" Content="Next" UseLayoutRounding="False" ClipToBounds="True" SnapsToDevicePixels="True" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsManipulationEnabled="True"/>
