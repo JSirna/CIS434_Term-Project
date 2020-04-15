@@ -42,9 +42,17 @@ namespace musicPlayer00
                 foreach(Playlist pl in plHolder.getPlaylists())
                 {
                     Add_Folder_View(pl);
+                    pl.Update_Songs();
                 }
             }
-
+            foreach(Playlist pl in plHolder.getPlaylists())
+            {
+                Console.WriteLine(pl.getName());
+                foreach(Song song in pl.getSongs())
+                {
+                    Console.WriteLine(song.getName());
+                }
+            }
             string myMusicPath = Environment.GetFolderPath(Environment.SpecialFolder.MyMusic); //using Environment instead of hard-code
             try
             {
@@ -60,7 +68,7 @@ namespace musicPlayer00
             catch { } // All Other exceptions
 
             // Threading a clock for the timer & slider
-            DispatcherTimer dTimer = new DispatcherTimer();
+            DispatcherTimer dTimer = new DispatcherTimer(DispatcherPriority.Send);
             dTimer.Interval = new TimeSpan(0, 0, 1);
             dTimer.Tick += dTimer_sec;
             dTimer.Start();
@@ -244,10 +252,7 @@ namespace musicPlayer00
                     foreach (string folder in songs)
                     {
                         Song tmp = new Song(pl, getFileName(folder), pl.getMaxPosition() + 1, folder);
-                        if (!pl.alreadyHasSong(tmp))
-                        {
-                            pl.addSong(tmp);
-                        }
+                        pl.addSong(tmp);
                     }
                     pl.sortSongs();
                     foreach (Song song in pl.getSongs())
@@ -259,10 +264,17 @@ namespace musicPlayer00
                                 if (!song.getName().EndsWith(".jpg") && !song.getName().EndsWith(".ini") && !song.getName().EndsWith(".db")
                                     && !song.getName().EndsWith(".wpl") && !song.getName().EndsWith(".pla") && !song.getName().EndsWith(".png"))
                                 {
-                                    TagLib.File songThing = TagLib.File.Create(song.getPath());
-                                    string title = songThing.Tag.Title == "" || songThing.Tag.Title == null ? song.getName().Replace(".mp3", "") : songThing.Tag.Title;
-                                    ListViewItem lvi = new ListViewItem { Content = title, Tag = song };
-                                    SongView.Items.Add(lvi);
+                                    try
+                                    {
+                                        TagLib.File songThing = TagLib.File.Create(song.getPath());
+                                        string title = songThing.Tag.Title == "" || songThing.Tag.Title == null ? song.getName().Replace(".mp3", "") : songThing.Tag.Title;
+                                        ListViewItem lvi = new ListViewItem { Content = title, Tag = song };
+                                        SongView.Items.Add(lvi);
+                                    }
+                                    catch (TagLib.UnsupportedFormatException ex)
+                                    {
+                                        Console.WriteLine(ex);
+                                    }
                                 }
                             }
                         }
@@ -302,9 +314,9 @@ namespace musicPlayer00
                 currentlyPlaying = null;
                 Play(randPL, randSong);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                MessageBox.Show("There are no songs to shuffle!", "Error");
+                MessageBox.Show(ex.ToString(), "Error");
             }
         }
 
@@ -334,9 +346,30 @@ namespace musicPlayer00
             }
         }
 
+        private void Add_New_Folder(object sender, System.Windows.DragEventArgs e)
+        {
+            string[] files = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop, false);
+            var dirs = files.Where(s => Directory.Exists(s));
+            foreach (string dir in dirs)
+            {
+                try
+                {
+                    Playlist pl = new Playlist(getFileName(dir), dir, plHolder.getMaxPosition() + 1);
+                    plHolder.addPlaylist(pl);
+                    Add_Folder_View(pl);
+                }
+                catch (System.IO.IOException)
+                {
+                    Console.WriteLine("Adding folder at path : " + dir + "failed");
+                    continue;
+                }
+            }
+        }
+
         //Saves current folders
         private void On_Close(object sender, EventArgs e)
         {
+            File.Delete("PlHolderData.dat");
             Stream stream = File.Create("PlHolderData.dat");
             BinaryFormatter bf = new BinaryFormatter();
             bf.Serialize(stream, plHolder);
@@ -485,7 +518,6 @@ namespace musicPlayer00
             {
                 item.Items.Clear();
                 Playlist pl = new Playlist(item.HeaderStringFormat, newPath, plHolder.getMaxPosition());
-
                 try
                 {
                     #region The stuff that works

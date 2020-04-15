@@ -12,6 +12,7 @@ namespace musicPlayer00
     {
         private List<Playlist> playlists = new List<Playlist>();
         public int size;
+
         public PlaylistHolder()
         {
             size = 0;
@@ -26,9 +27,9 @@ namespace musicPlayer00
         public void removePlaylist(Playlist pl)
         {
             playlists.Remove(pl);
-            foreach(Playlist tmp in playlists)
+            foreach (Playlist tmp in playlists)
             {
-                if(tmp.position > pl.position)
+                if (tmp.position > pl.position)
                 {
                     pl.position--;
                 }
@@ -39,9 +40,9 @@ namespace musicPlayer00
         //returns whether playlist already exists
         public bool containsPlaylist(Playlist pl)
         {
-            foreach(Playlist tmp in playlists)
+            foreach (Playlist tmp in playlists)
             {
-                if(pl.getPath().Equals(tmp.getPath()))
+                if (pl.getPath().Equals(tmp.getPath()))
                 {
                     return true;
                 }
@@ -66,6 +67,13 @@ namespace musicPlayer00
             return size > 0 ? playlists.Max<Playlist>(e => e.position) : 0;
         }
 
+        //for subfolder
+        public int getMaxPosition(Playlist parent)
+        {
+            Playlist[] pls = playlists.Where<Playlist>(e => e.parent == parent).ToArray();
+            return size > 0 ? pls.Max<Playlist>(e => e.position) : 0;
+        }
+
         public List<Playlist> getPlaylists()
         {
             return playlists;
@@ -74,7 +82,7 @@ namespace musicPlayer00
         {
             Playlist[] tmp = playlists.Where(e => e.size > 0).ToArray();
             Random rnd = new Random();
-            int n = tmp.Count() - 1;
+            int n = tmp.Count();
             if (tmp.Count() < 1)
                 throw new NullReferenceException();
             int k = rnd.Next(0, n);
