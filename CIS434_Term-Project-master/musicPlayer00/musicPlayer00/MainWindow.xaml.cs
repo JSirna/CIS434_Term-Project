@@ -45,14 +45,6 @@ namespace musicPlayer00
                     pl.Update_Songs();
                 }
             }
-            foreach(Playlist pl in plHolder.getPlaylists())
-            {
-                Console.WriteLine(pl.getName());
-                foreach(Song song in pl.getSongs())
-                {
-                    Console.WriteLine(song.getName());
-                }
-            }
             string myMusicPath = Environment.GetFolderPath(Environment.SpecialFolder.MyMusic); //using Environment instead of hard-code
             try
             {
