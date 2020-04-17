@@ -9,4 +9,5 @@ It utilizes a GUI with a TreeView, a ListView, and buttons in order to play the 
 **4/14/20**  
 Resizability fixed, slider function done  
 Added folder (playlist) tree view expansion;  
-Shuffle function in progress  
+Shuffle function completed   
+Autoplay feature (TBD)
