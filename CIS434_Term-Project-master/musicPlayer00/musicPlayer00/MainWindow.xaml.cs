@@ -247,6 +247,7 @@ namespace musicPlayer00
                         pl.addSong(tmp);
                     }
                     pl.sortSongs();
+                    selectedHeader = pl;
                     foreach (Song song in pl.getSongs())
                     {
                         try
@@ -298,13 +299,13 @@ namespace musicPlayer00
         {
             try
             {
-                Playlist randPL = plHolder.getRandomPlaylist();
-                Song randSong = randPL.getRandomSong();
-                selectedHeader = randPL;
+                //Playlist randPL = plHolder.getRandomPlaylist();
+                Song randSong = selectedHeader.getRandomSong();
+                //selectedHeader = randPL;
                 SongView.SelectedItem = null;
                 paused = false;
                 currentlyPlaying = null;
-                Play(randPL, randSong);
+                Play(selectedHeader, randSong);
             }
             catch (Exception ex)
             {
