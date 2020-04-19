@@ -51,22 +51,12 @@ namespace musicPlayer00
                 string[] MusicDir = Directory.GetDirectories(myMusicPath);
                 foreach (string folders in MusicDir) 
                 {
-                    string[] files = Directory.GetFiles(folders);
-                    foreach (string file in files)
-                    {
-                        if( Path.GetExtension(file) == ".mp3" || Path.GetExtension(file) == ".wav" ) 
-                        {
-                            hasFile = true;
-                        }
-                      
-                    }
-                    if(hasFile )
-                    {
-                        Playlist pl = new Playlist(getFileName(folders), folders, plHolder.getMaxPosition());
-                        if (!plHolder.containsPlaylist(pl))
-                          Add_Folder_View(pl); //add selected folder
-                        hasFile = false;
-                    }
+                    
+                    Playlist pl = new Playlist(getFileName(folders), folders, plHolder.getMaxPosition());
+                    if (!plHolder.containsPlaylist(pl))
+                        Add_Folder_View(pl); //add selected folder
+                    hasFile = false;
+                    
                    
                 }
             }
