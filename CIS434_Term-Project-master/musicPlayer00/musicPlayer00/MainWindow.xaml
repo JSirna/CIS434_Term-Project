@@ -7,28 +7,29 @@
         xmlns:Properties="clr-namespace:musicPlayer00.Properties" x:Class="musicPlayer00.MainWindow"
         mc:Ignorable="d"
         Title="Music Player ver 00" Height="464.753" Width="829.509" Topmost="True" Cursor="Arrow" WindowStartupLocation="CenterScreen"
-        Closing="On_Close">
+        Closing="On_Close" ResizeMode="CanMinimize">
     <Grid Margin="0,0,0,29">
-        <!--<Grid.ColumnDefinitions>
-            <ColumnDefinition Width="18*"/>
-            <ColumnDefinition Width="119*"/>
-        </Grid.ColumnDefinitions>-->
         <DockPanel Grid.ColumnSpan="2">
             <Menu DockPanel.Dock="Top" VerticalAlignment="Top" SnapsToDevicePixels="True">
                 <MenuItem Header="_File">
-                    <!--<MenuItem Header="_New" />-->
                     <MenuItem Header="_Open" Click="Add_Folder" />
-                    <MenuItem Header="_Save" />
+                    <!--<MenuItem Header="_Save" />-->
                     <Separator />
                     <MenuItem Header="_Exit" Click="Exit_Click" />
                 </MenuItem>
             </Menu>
 
         </DockPanel>
-        <TreeView x:Name="folderDisplay" Width="161" HorizontalAlignment="Left" Margin="0,20,0,132" Grid.ColumnSpan="2" MouseUp="Selected_Folder" SnapsToDevicePixels="True" ScrollViewer.CanContentScroll="True" RenderTransformOrigin="0.5,0.5" IsManipulationEnabled="True"/>
+        <TreeView x:Name="folderDisplay" TreeViewItem.Expanded="TreeView_Expansion" Width="194" HorizontalAlignment="Left" Margin="0,20,0,132" MouseUp="Selected_Folder" SnapsToDevicePixels="True" AllowDrop="True" DragDrop.Drop="Add_New_Folder" ScrollViewer.CanContentScroll="True" RenderTransformOrigin="0.5,0.5" IsManipulationEnabled="True"/>
 
-        <ListView x:Name="SongView" SnapsToDevicePixels="True" ClipToBounds="True" Margin="166,20,18,132" MouseDoubleClick="Play_Click" AllowDrop="True" DragDrop.Drop="Add_To_Playlist"  SelectionChanged="SongView_SelectionChanged"/>
-       
+        <ListView x:Name="SongView" SnapsToDevicePixels="True" ClipToBounds="True" Margin="199,20,18,132" MouseDoubleClick="Play_Click" AllowDrop="True" DragDrop.Drop="Add_To_Playlist"  SelectionChanged="SongView_SelectionChanged">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Song Name"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
         <Grid Margin="2,273,18,-24" ScrollViewer.VerticalScrollBarVisibility="Disabled" ClipToBounds="True" SnapsToDevicePixels="True" IsManipulationEnabled="True">
             <Button Margin="401.261,31,330.739,31" HorizontalAlignment="Center" Width="51" VerticalAlignment="Center" Height="47" Click="Play_Click" x:Name="PlayButton" Content="Play" BorderThickness="1" UseLayoutRounding="False" ToolTip="Play Selected Song" ClipToBounds="True" SnapsToDevicePixels="True" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsManipulationEnabled="True"/>
             <Button Margin="0,31,240.312,31" HorizontalAlignment="Right" Width="51" VerticalAlignment="Center" Height="47" Click="Play_Next" x:Name="NextButton" Content="Next" UseLayoutRounding="False" ClipToBounds="True" SnapsToDevicePixels="True" ScrollViewer.VerticalScrollBarVisibility="Disabled" IsManipulationEnabled="True"/>
@@ -36,8 +37,8 @@
             <Button Content="Add Folder" Height="22" Margin="0,20,695,0" VerticalAlignment="Top" Click="Add_Folder" HorizontalAlignment="Right" Width="83" RenderTransformOrigin="1.766,1.017" SnapsToDevicePixels="True" ClipToBounds="True" IsManipulationEnabled="True"/>
             <Button Content="Delete" Height="21" Margin="0,62,695,0" VerticalAlignment="Top" Click="Delete" HorizontalAlignment="Right" Width="83" RenderTransformOrigin="1.46,-0.371" ClipToBounds="True" SnapsToDevicePixels="True" IsManipulationEnabled="True"/>
             <Slider HorizontalAlignment="Left" Margin="184,10,0,0" VerticalAlignment="Top" Height="26" Width="550" Minimum="0"  IsSnapToTickEnabled="True" ValueChanged="Slider_Value_Changed" Value="{Binding player.controls.currentPosition, Mode=TwoWay}" x:Name="Slider" LargeChange="5" SnapsToDevicePixels="True" />
-            <Label x:Name="TxtSliderValue" Content="0" Margin="135,10,624.2,121.4" VerticalAlignment="Center" HorizontalAlignment="Center" Height="26" Width="44" SnapsToDevicePixels="True" RenderTransformOrigin="0.346,-0.068"     />
-            <Label x:Name="TxtSliderMaxValue" Content="0" Margin="739,10,20.2,121.4" VerticalAlignment="Center" HorizontalAlignment="Center" Height="26" Width="44" SnapsToDevicePixels="True" RenderTransformOrigin="0.346,-0.068"     />
+            <Label x:Name="TxtSliderValue" Content="0:00" Margin="135,10,624.2,121.4" VerticalAlignment="Center" HorizontalAlignment="Center" Height="26" Width="44" SnapsToDevicePixels="True" RenderTransformOrigin="0.346,-0.068"     />
+            <Label x:Name="TxtSliderMaxValue" Content="0:00" Margin="739,10,20.2,121.4" VerticalAlignment="Center" HorizontalAlignment="Center" Height="26" Width="44" SnapsToDevicePixels="True" RenderTransformOrigin="0.346,-0.068"     />
             <Button Content="Shuffle" Height="20" Margin="656,62,10,0" VerticalAlignment="Top" Click="Shuffle_Click" RenderTransformOrigin="1.46,-0.371" ClipToBounds="True" SnapsToDevicePixels="True" IsManipulationEnabled="True"/>
         </Grid>
 

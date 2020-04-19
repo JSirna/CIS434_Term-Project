@@ -1,6 +1,14 @@
-## CIS434_Term-Project
-This is where all project code will go, and miscellaneous research
+# Software Engineering Spring 2020 Project - Group 10
+
+
+## General Description
+This is a simple, free music player that utilizes the [TagLib](https://taglib.org/) library and plays music files.  
+It utilizes a GUI with a TreeView, a ListView, and buttons in order to play the music selected from the ListView.
 
 ### Updates
--The window can expand, but the grid holding the buttons and slider doesn't move with the window;
--the textboxes should have seconds or time remaining or something clearer than a number
+**4/14/20**  
+Resizability fixed, slider function done  
+Added folder (playlist) tree view expansion;  
+Shuffle function completed   
+**4/17/20**  
+Autoplay feature (TBD)
