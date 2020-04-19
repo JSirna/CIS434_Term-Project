@@ -23,6 +23,7 @@ namespace musicPlayer00
         Playlist selectedHeader = null; //holds selected folder
         Song currentlyPlaying; //holds currently playing song
         bool paused = false; //if song is paused
+        bool SongEnd = false;
         // State it goes through playlest
         bool repeat = false;
         bool cycle = true;
@@ -48,12 +49,27 @@ namespace musicPlayer00
             string myMusicPath = Environment.GetFolderPath(Environment.SpecialFolder.MyMusic); //using Environment instead of hard-code
             try
             {
+                bool hasFile = false;
                 string[] MusicDir = Directory.GetDirectories(myMusicPath);
                 foreach (string folders in MusicDir) 
                 {
-                    Playlist pl = new Playlist(getFileName(folders), folders, plHolder.getMaxPosition());
-                    if (!plHolder.containsPlaylist(pl))
-                        Add_Folder_View(pl); //add selected folder
+                    string[] files = Directory.GetFiles(folders);
+                    foreach (string file in files)
+                    {
+                        if( Path.GetExtension(file) == ".mp3" || Path.GetExtension(file) == ".wav" ) 
+                        {
+                            hasFile = true;
+                        }
+                      
+                    }
+                    if(hasFile )
+                    {
+                        Playlist pl = new Playlist(getFileName(folders), folders, plHolder.getMaxPosition());
+                        if (!plHolder.containsPlaylist(pl))
+                          Add_Folder_View(pl); //add selected folder
+                        hasFile = false;
+                    }
+                   
                 }
             }
             catch (UnauthorizedAccessException) { } //if you enter a directory your not allowed to.
@@ -72,7 +88,14 @@ namespace musicPlayer00
             if ((paused == false))
             {
                 Slider.Value = (int)player.controls.currentPosition;
+
+                if ((currentlyPlaying != null) && ((int)player.controls.currentPosition == Song_Duration() - 1))
+                {
+                    player.controls.currentPosition = 0;
+                    Play_Next(new object(), new RoutedEventArgs());
+                }
             }
+           
         }
 
         //changes button based on what is selected
@@ -126,32 +149,25 @@ namespace musicPlayer00
             {
                 currentlyPlaying = song;
                 Slider.Maximum = Song_Duration(); // Sets song length to slider max value
-                TxtSliderMaxValue.Content = Song_Duration().ToString(); // shows song length at right of slider
-                Console.WriteLine("New Song");
-                player.URL = song.getPath();
-                Play_Seek();
+                TxtSliderMaxValue.Content = convertToString(Song_Duration()); // shows song length at right of slider
+                //Console.WriteLine("New Song");
+                player.URL = song.getPath();                
                 player.controls.play();
             }
             if (paused) //continue playing
             {
-                Console.WriteLine("Continue playing");
-                player.controls.play();
-                Play_Seek();
+                //Console.WriteLine("Continue playing");
+                player.controls.play();                
             }
             else
             {
-                Console.WriteLine("Paused");
-                Play_Seek();
+                //Console.WriteLine("Paused");               
                 player.controls.pause();
             }
         }
 
         // write in console what second you are in the song only works when playing
-        private void Play_Seek()
-        {
-             Console.WriteLine("time {0} sec", (int)player.controls.currentPosition);
-            
-        }
+        
 
         void Player_ChangedState(int state) //Actions when media player changes state
         {
@@ -173,7 +189,7 @@ namespace musicPlayer00
                 paused = false;
                 PlayButton.Content = "Pause";
             }
-
+            
         }
 
         //add folder to TreeView
@@ -246,6 +262,7 @@ namespace musicPlayer00
                     }
                 }
                 pl.sortSongs();
+                selectedHeader = pl;
                     foreach (Song song in pl.getSongs())
                     {
                         try
@@ -281,13 +298,13 @@ namespace musicPlayer00
         {
             try
             {
-                Playlist randPL = plHolder.getRandomPlaylist();
-                Song randSong = randPL.getRandomSong();
-                selectedHeader = randPL;
+                //Playlist randPL = plHolder.getRandomPlaylist();
+                Song randSong = selectedHeader.getRandomSong();
+                //selectedHeader = randPL;
                 SongView.SelectedItem = null;
                 paused = false;
                 currentlyPlaying = null;
-                Play(randPL, randSong);
+                Play(selectedHeader, randSong);
             }
             catch (Exception)
             {
@@ -373,11 +390,8 @@ namespace musicPlayer00
             catch
             { Console.WriteLine("Failed to get song Legnth"); }
 
-            //Console.WriteLine("{0} : {1}", fi.Length, fi.Directory);  //length and name of file
-
             TagLib.File l = TagLib.File.Create(fi.ToString());//create taglib file
             SongLength = (int)l.Properties.Duration.TotalSeconds;//get the song length in seconds
-            //Console.WriteLine("double {0}", l.Properties.Duration.TotalSeconds);
             return SongLength;
         }
 
@@ -419,7 +433,7 @@ namespace musicPlayer00
 
         }
 
-        // Half seek, it doesn't move the slider every second but if you move the slider it will go to that second of the song.
+        // 
         private void Slider_Value_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
 
